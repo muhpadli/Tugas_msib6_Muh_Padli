@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventHandler</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div id="div1">
+        <audio id="sound1" class="music" src="./sound/bebek_sound.mp3"></audio>
+        Hewan Bebek
+    </div>
+    <div id="div2">
+        <audio id="sound2" class="music"  src="./sound/cat_sound.mp3"></audio>
+        Hewan Kucing/</div>
+    <div id="div3">
+        <audio id="sound3" class="music"  src="./sound/ayam_song.mp3"></audio>
+        Hewan ayam</div>
+        <script src="./js/jquery-3.7.1.js"></script>
+        <script>
+            $("document").ready(function(){
+                //div 1
+                $("#div1").mouseover(function(){
+                    $(this).css({
+                        background : "URL('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZUMXyaCEVWFWtZRxBcxTD8O_Rv-FHb0X9Bw&usqp=CAU')",
+                        "background-repeat" : "no-repeat", 
+                        "background-size" : "cover",
+                        "background-position" : "center"
+                    })
+                    document.getElementById("sound1").play();
+                });
+                
+                $("div").mouseout(function(){
+                    $(this).css({
+                        background : "green"
+                    });
+    
+                    document.getElementById("sound1").pause();
+                    document.getElementById("sound2").pause();
+                    document.getElementById("sound3").pause();
+                })
+    
+                $("#div2").mouseover(function(){
+                    $(this).css({
+                        background : "URL('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1zkwz1VoVfAk9BQwRlmNZQLg5fAn7tNoK1A&usqp=CAU')",
+                        "background-repeat" : "no-repeat", 
+                        "background-size" : "cover",
+                        "background-position" : "center"
+                     })
+                     document.getElementById("sound2").play();
+                });
+    
+                $("#div3").mouseover(function(){
+                    $(this).css({
+                        background : "URL('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT47AJFXuPZdIlFk23vW0-XIZzEM7Zf2PqHvw&usqp=CAU')",
+                        "background-repeat" : "no-repeat", 
+                        "background-size" : "cover",
+                        "background-position" : "center"
+                    })
+                    document.getElementById("sound3").play();
+                });
+            })
+        </script>
+</body>
+</html>
