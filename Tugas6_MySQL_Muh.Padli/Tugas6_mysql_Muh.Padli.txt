@@ -1,0 +1,226 @@
+Nama : Muh. Padli
+
+------------------------------------------------------------------------------------------------------------
+SOAL 6.1
+1. Query: 
+mysql> DELIMITER $$
+mysql> CREATE PROCEDURE pro_naik(
+    -> IN jenis_produk INT,
+    -> IN persentasi_kenaikan INT)
+    -> BEGIN
+    -> UPDATE produk SET harga_jual = harga_jual + (harga_jual * persentasi_kenaikan / 100)
+    -> WHERE jenis_produk_id = jenis_produk;
+    -> END $$
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> DELIMITER ;
+mysql> CALL pro_naik(1,4);
+Query OK, 13 rows affected (0.01 sec)
+
+2. Query:
+mysql> DELIMITER $$
+mysql> DROP FUNCTION IF EXISTS umur  $$
+
+mysql> CREATE FUNCTION umur(tgl_lahir DATE)
+    -> RETURNS INT
+    -> BEGIN
+    -> DECLARE umur INT;
+    -> SET umur = YEAR(CURDATE()) - YEAR(tgl_lahir);
+    -> RETURN umur;
+    -> END $$
+
+mysql> DELIMITER ;
+mysql> SELECT nama, umur(tgl_lahir) AS umur FROM pelanggan;
++--------------------+------+
+| nama               | umur |
++--------------------+------+
+| Agung Sedayu Group |   14 |
+| Pandan Wangi       |   74 |
+| Sekar Mirah        |   41 |
+| Swandaru Geni      |   43 |
+| Pradabashu         |   39 |
+| Gayatri Dwi        |   37 |
+| Dewi Gyat          |   36 |
+| Andre Haru         |   34 |
+| Ahmad Hasan        |   32 |
+| Cassanndra         |   34 |
+| Andi Wijaya        |    1 |
+| Ira                |    1 |
++--------------------+------+
+
+3. Query :
+mysql> DELIMITER $$
+mysql> CREATE FUNCTION kategori_harga(harga INT)
+    -> RETURNS VARCHAR(20)
+    -> BEGIN
+    -> DECLARE kategori_harga VARCHAR(20);
+    -> IF harga >= 0 AND harga<= 500000 THEN
+    -> SET kategori_harga = 'murah';
+    -> ELSEIF harga > 500000 AND harga<= 3000000 THEN
+    -> SET kategori_harga = 'sedang';
+    -> ELSEIF harga > 3000000 AND harga<= 10000000 THEN
+    -> SET kategori_harga = 'mahal';
+    -> ELSEIF harga > 10000000 THEN
+    -> SET kategori_harga = 'sangat mahal';
+    -> END IF;
+    -> RETURN kategori_harga;
+    -> END $$
+mysql> DELIMITER ;
+
+mysql> SELECT p.nama AS 'nama barang', p.harga_jual AS 'harga satuan', pi.qty AS jumlah,
+    -> pi.harga AS 'total_harga', kategori_harga(pi.harga) AS 'kategori harga' FROM pesanan_items pi
+    -> LEFT JOIN produk p ON p.id = pi.produk_id;
++-------------------+--------------+--------+-------------+----------------+
+| nama barang       | harga satuan | jumlah | total_harga | kategori harga |
++-------------------+--------------+--------+-------------+----------------+
+| Televisi 21 inchs |     52520000 |      1 |     5040000 | mahal          |
+| Kulkas 2 pintu    |      4867200 |      1 |     4680000 | mahal          |
+| Teh Kotak         |         3500 |      5 |        3500 | murah          |
+| Teh Kotak         |         3500 |     10 |        3500 | murah          |
+| Televisi 21 inchs |     52520000 |      1 |     5040000 | mahal          |
+| Teh Kotak         |         3500 |     10 |        3500 | murah          |
+| Teh Kotak         |         3500 |     20 |        3500 | murah          |
++-------------------+--------------+--------+-------------+----------------+
+
+------------------------------------------------------------------------------------------------------------
+SOAL 6.2
+
+1. Query :
+
+// Pelanggan memesan didalam table pesanan
+mysql> SELECT nama, umur(tgl_lahir) AS umur FROM pelanggan;
+
+//Didalam table pembayaran tambahkan kolom status_pembayaran
+mysql> ALTER TABLE pembayaran ADD status_pembayaran varchar(25);
+
+//Dilanjutkan dengan proses pembayaran di table pembayaran
+mysql> DELIMITER $$
+mysql> CREATE TRIGGER cek_pembayaran BEFORE INSERT ON pembayaran
+    -> FOR EACH ROW
+    -> BEGIN
+    -> DECLARE total_bayar DECIMAL(10, 2);
+    -> DECLARE total_pesanan DECIMAL(10, 2);
+    -> SELECT SUM(jumlah) INTO total_bayar FROM pembayaran WHERE pesanan_id = NEW.pesanan_id;
+    -> SELECT total INTO total_pesanan FROM pesanan WHERE id = NEW.pesanan_id;
+    -> IF total_bayar + NEW.jumlah >= total_pesanan THEN
+    -> SET NEW.status_pembayaran = 'Lunas';
+    -> END IF;
+    -> END $$
+DELIMITER ;
+// Menambahkan data pada tabel pembayaran
+mysql> INSERT INTO pembayaran (no_kuitansi, tanggal, jumlah, ke, pesanan_id, status_pembayaran)
+    -> VALUES ('KWI001', '2023-03-03', 200000, 1, 1);
+
+2. Query :
+mysql> DELIMITER $$
+mysql> CREATE PROCEDURE kurangi_stok(IN produk_id INT, IN jumlah_pesanan INT)
+    -> BEGIN
+    -> DECLARE stok_produk INT;
+    -> SELECT stok INTO stok_produk FROM produk WHERE id = produk_id;
+    -> SET stok_produk = stok_produk - jumlah_pesanan;
+    -> IF stok_produk < 0 THEN
+    -> SIGNAL SQLSTATE '45000'
+    -> SET MESSAGE_TEXT = 'Stok produk tidak mencukupi';
+    -> END IF;
+    -> UPDATE produk SET stok = stok_produk WHERE id = produk_id;
+    -> END $$
+
+mysql> DELIMITER ;
+
+mysql> SELECT id, nama, harga_jual, stok FROM produk WHERE id= 34;
++----+-----------+------------+------+
+| id | nama      | harga_jual | stok |
++----+-----------+------------+------+
+| 34 | Sirup ABC |      15000 |    7 |
++----+-----------+------------+------+
+
+mysql>  CALL kurangi_stok(34, 2);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> SELECT id, nama, harga_jual, stok FROM produk WHERE id= 34;
++----+-----------+------------+------+
+| id | nama      | harga_jual | stok |
++----+-----------+------------+------+
+| 34 | Sirup ABC |      15000 |    5 |
++----+-----------+------------+------+
+
+3.
+mysql> DELIMITER $$
+mysql> CREATE TRIGGER trig_kurangi_stok AFTER INSERT ON pesanan_items
+    -> FOR EACH ROW
+    -> BEGIN
+    -> CALL kurangi_stok(NEW.produk_id, NEW.qty);
+    -> END $$
+Query OK, 0 rows affected (0.01 sec)
+mysql> DELIMITER ;
+
+mysql> SELECT id, nama, stok FROM produk;
++----+-------------------+------+
+| id | nama              | stok |
++----+-------------------+------+
+|  1 | Televisi 21 inchs |    5 |
+|  2 | Televisi 40 inch  |    4 |
+|  3 | Kulkas 2 pintu    |    6 |
+|  4 | Meja Makan        |    4 |
+|  5 | Teh Kotak         |    6 |
+|  6 | PC Desktop HP     |    9 |
+|  7 | Teh Botol         |   53 |
+|  8 | Notebook Acer S   |    7 |
+|  9 | Notebook Lenovo   |    9 |
+| 11 | Laptop Lenovo     |    5 |
+| 15 | Kopi              |   10 |
+| 16 | Teh Sosro 2       |   10 |
+| 18 | Laptop Asus       |   10 |
+| 19 | Televisi 22 inc`  |    5 |
+| 20 | Televisi 23 inc   |    5 |
+| 21 | Televisi 24 inc   |    5 |
+| 22 | Televisi 25 inc   |    5 |
+| 24 | Televisi 27 inc   |    5 |
+| 25 | Televisi 28 inc   |    5 |
+| 26 | Televisi 29 inc   |    5 |
+| 27 | Teh Pucuk         |   10 |
+| 28 | Teh Pucuk2        |   10 |
+| 32 | Teh Botol Sosro   |    6 |
+| 33 | Marjan            |    9 |
+| 34 | Sirup ABC         |    5 |
++----+-------------------+------+
+25 rows in set (0.00 sec)
+
+mysql> INSERT INTO pesanan_items (produk_id, pesanan_id, qty, harga) VALUES
+    -> (7, 3, 2, 7000)
+    -> ;
+Query OK, 1 row affected (0.02 sec)
+
+mysql> SELECT id, nama, stok FROM produk;
++----+-------------------+------+
+| id | nama              | stok |
++----+-------------------+------+
+|  1 | Televisi 21 inchs |    5 |
+|  2 | Televisi 40 inch  |    4 |
+|  3 | Kulkas 2 pintu    |    6 |
+|  4 | Meja Makan        |    4 |
+|  5 | Teh Kotak         |    6 |
+|  6 | PC Desktop HP     |    9 |
+|  7 | Teh Botol         |   51 |
+|  8 | Notebook Acer S   |    7 |
+|  9 | Notebook Lenovo   |    9 |
+| 11 | Laptop Lenovo     |    5 |
+| 15 | Kopi              |   10 |
+| 16 | Teh Sosro 2       |   10 |
+| 18 | Laptop Asus       |   10 |
+| 19 | Televisi 22 inc`  |    5 |
+| 20 | Televisi 23 inc   |    5 |
+| 21 | Televisi 24 inc   |    5 |
+| 22 | Televisi 25 inc   |    5 |
+| 24 | Televisi 27 inc   |    5 |
+| 25 | Televisi 28 inc   |    5 |
+| 26 | Televisi 29 inc   |    5 |
+| 27 | Teh Pucuk         |   10 |
+| 28 | Teh Pucuk2        |   10 |
+| 32 | Teh Botol Sosro   |    6 |
+| 33 | Marjan            |    9 |
+| 34 | Sirup ABC         |    5 |
++----+-------------------+------+
+
+
+
